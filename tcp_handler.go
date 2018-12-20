@@ -7,6 +7,7 @@ import (
 	"net"
 	"sync"
 
+	"github.com/codeuniversity/ppp-mhist/models"
 	"github.com/codeuniversity/ppp-mhist/tcp"
 )
 
@@ -15,25 +16,25 @@ type TCPHandler struct {
 	address                     string
 	outboundCollection          *tcp.ConnectionCollection
 	server                      *Server
-	filterPerOutboundConnection map[*tcp.Connection]*FilterCollection
+	filterPerOutboundConnection map[*tcp.Connection]*models.FilterCollection
 	filterMutex                 *sync.RWMutex
-	pools                       *Pools
+	pools                       *models.Pools
 }
 
 //NewTCPHandler sets the wrapped handlers callbacks correctly, Run() still has to be called
-func NewTCPHandler(server *Server, port int, pools *Pools) *TCPHandler {
+func NewTCPHandler(server *Server, port int, pools *models.Pools) *TCPHandler {
 	return &TCPHandler{
 		address:                     fmt.Sprintf("0.0.0.0:%v", port),
 		server:                      server,
 		outboundCollection:          &tcp.ConnectionCollection{},
 		filterMutex:                 &sync.RWMutex{},
-		filterPerOutboundConnection: make(map[*tcp.Connection]*FilterCollection),
+		filterPerOutboundConnection: make(map[*tcp.Connection]*models.FilterCollection),
 		pools:                       pools,
 	}
 }
 
 //Notify handler about new message
-func (h *TCPHandler) Notify(name string, measurement Measurement) {
+func (h *TCPHandler) Notify(name string, measurement models.Measurement) {
 	m := h.pools.GetMessage()
 	defer h.pools.PutMessage(m)
 
@@ -95,7 +96,7 @@ func (h *TCPHandler) handleNewConnection(conn net.Conn) {
 		conn.Close()
 		return
 	}
-	m := &SubscriptionMessage{}
+	m := &models.SubscriptionMessage{}
 	err = json.Unmarshal(byteSlice, m)
 	if err != nil {
 		fmt.Println(err)
@@ -128,10 +129,10 @@ func (h *TCPHandler) removeFilterForConnection(conn *tcp.Connection) {
 	delete(h.filterPerOutboundConnection, conn)
 }
 
-func (h *TCPHandler) addFilterForConnection(filterDefinition FilterDefinition, conn *tcp.Connection) {
+func (h *TCPHandler) addFilterForConnection(filterDefinition models.FilterDefinition, conn *tcp.Connection) {
 	h.filterMutex.Lock()
 	defer h.filterMutex.Unlock()
 
-	filter := NewFilterCollection(filterDefinition)
+	filter := models.NewFilterCollection(filterDefinition)
 	h.filterPerOutboundConnection[conn] = filter
 }

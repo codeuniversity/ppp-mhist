@@ -2,6 +2,8 @@ package mhist
 
 import (
 	"fmt"
+
+	"github.com/codeuniversity/ppp-mhist/models"
 )
 
 //Store is responsible for handling Storage of different kinds of measurements
@@ -30,8 +32,8 @@ func (s *Store) AddReplication(rep Subscriber) {
 	s.replications = append(s.replications, rep)
 }
 
-//Add named measurement to correct Series
-func (s *Store) Add(name string, m Measurement, isReplication bool) {
+//Add named measurement
+func (s *Store) Add(name string, m models.Measurement, isReplication bool) {
 	if !isReplication {
 		s.replications.NotifyAll(name, m)
 	}
@@ -39,11 +41,11 @@ func (s *Store) Add(name string, m Measurement, isReplication bool) {
 }
 
 //GetMeasurementsInTimeRange from disk store
-func (s *Store) GetMeasurementsInTimeRange(start, end int64, filterDefinition FilterDefinition) map[string][]Measurement {
+func (s *Store) GetMeasurementsInTimeRange(start, end int64, filterDefinition models.FilterDefinition) map[string][]models.Measurement {
 	if s.diskStore != nil {
 		return s.diskStore.GetMeasurementsInTimeRange(start, end, filterDefinition)
 	}
-	return map[string][]Measurement{}
+	return map[string][]models.Measurement{}
 }
 
 //GetStoredMetaInfo from Diskstore

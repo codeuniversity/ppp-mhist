@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/codeuniversity/ppp-mhist/models"
 )
 
 //HTTPHandler handles http connections
@@ -75,7 +77,7 @@ func (h *HTTPHandler) handlePost(w http.ResponseWriter, r *http.Request) {
 type getParams struct {
 	startTs          int64
 	endTs            int64
-	filterDefinition FilterDefinition
+	filterDefinition models.FilterDefinition
 }
 
 func (h *HTTPHandler) handleGet(w http.ResponseWriter, r *http.Request) {

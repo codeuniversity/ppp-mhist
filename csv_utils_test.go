@@ -3,12 +3,13 @@ package mhist
 import (
 	"testing"
 
+	"github.com/codeuniversity/ppp-mhist/models"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 func Test_constructCsvLine(t *testing.T) {
 	Convey("fills the buffer correctly", t, func() {
-		m := &Numerical{
+		m := &models.Numerical{
 			Ts:    1000,
 			Value: 42,
 		}
