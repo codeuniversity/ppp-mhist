@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"time"
+
+	"github.com/codeuniversity/ppp-mhist/models"
 )
 
 const maxBuffer = 12 * 1024
@@ -16,7 +18,7 @@ var dataPath = "data"
 type DiskStore struct {
 	block       *Block
 	meta        *DiskMeta
-	pools       *Pools
+	pools       *models.Pools
 	addChan     chan addMessage
 	readChan    chan readMessage
 	stopChan    chan struct{}
@@ -26,21 +28,21 @@ type DiskStore struct {
 
 type addMessage struct {
 	name        string
-	measurement Measurement
+	measurement models.Measurement
 	doneChan    chan struct{}
 }
 
-type readResult map[string][]Measurement
+type readResult map[string][]models.Measurement
 
 type readMessage struct {
 	fromTs           int64
 	toTs             int64
-	filterDefinition FilterDefinition
+	filterDefinition models.FilterDefinition
 	resultChan       chan readResult
 }
 
 //NewDiskStore initializes the DiskBlockRoutine
-func NewDiskStore(pools *Pools, maxFileSize, maxDiskSize int) (*DiskStore, error) {
+func NewDiskStore(pools *models.Pools, maxFileSize, maxDiskSize int) (*DiskStore, error) {
 	err := os.MkdirAll(dataPath, os.ModePerm)
 	if err != nil {
 		return nil, err
@@ -62,14 +64,14 @@ func NewDiskStore(pools *Pools, maxFileSize, maxDiskSize int) (*DiskStore, error
 }
 
 //Notify DiskStore about new Measurement
-func (s *DiskStore) Notify(name string, m Measurement) {
+func (s *DiskStore) Notify(name string, m models.Measurement) {
 	ownMeasurement := m.CopyFrom(s.pools)
 	s.Add(name, m)
 	s.pools.PutMeasurement(ownMeasurement)
 }
 
 //Add measurement to block
-func (s *DiskStore) Add(name string, measurement Measurement) {
+func (s *DiskStore) Add(name string, measurement models.Measurement) {
 	doneChan := make(chan struct{})
 	s.addChan <- addMessage{
 		name:        name,
@@ -80,7 +82,7 @@ func (s *DiskStore) Add(name string, measurement Measurement) {
 }
 
 //GetMeasurementsInTimeRange for all measurement names
-func (s *DiskStore) GetMeasurementsInTimeRange(start, end int64, filterDefiniton FilterDefinition) map[string][]Measurement {
+func (s *DiskStore) GetMeasurementsInTimeRange(start, end int64, filterDefiniton models.FilterDefinition) map[string][]models.Measurement {
 	resultChan := make(chan readResult)
 	s.readChan <- readMessage{
 		fromTs:           start,
@@ -153,7 +155,7 @@ func (s *DiskStore) commit() {
 	}
 }
 
-func (s *DiskStore) handleAdd(name string, m Measurement) {
+func (s *DiskStore) handleAdd(name string, m models.Measurement) {
 	id, err := s.meta.GetOrCreateID(name, m.Type())
 	if err != nil {
 		//measurement is probably of different type than it used to be, just ignore for now
@@ -171,14 +173,14 @@ func (s *DiskStore) handleAdd(name string, m Measurement) {
 
 }
 
-func (s *DiskStore) handleRead(start, end int64, filterDefinition FilterDefinition) readResult {
+func (s *DiskStore) handleRead(start, end int64, filterDefinition models.FilterDefinition) readResult {
 	result := readResult{}
 	files, err := GetFilesInTimeRange(start, end)
 	if err != nil {
 		fmt.Println(err)
 		return readResult{}
 	}
-	filter := NewFilterCollection(filterDefinition)
+	filter := models.NewFilterCollection(filterDefinition)
 	for _, file := range files {
 		f, err := os.Open(filepath.Join(dataPath, file.name))
 		if err != nil {
@@ -216,20 +218,20 @@ func (s *DiskStore) handleRead(start, end int64, filterDefinition FilterDefiniti
 				continue
 			}
 
-			var measurement Measurement
+			var measurement models.Measurement
 			switch measurementType {
-			case MeasurementNumerical:
+			case models.MeasurementNumerical:
 				value, err := strconv.ParseFloat(valueString, 64)
 				if err != nil {
 					continue lineLoop
 				}
-				measurement = &Numerical{
+				measurement = &models.Numerical{
 					Ts:    ts,
 					Value: value,
 				}
 
-			case MeasurementCategorical:
-				measurement = &Categorical{
+			case models.MeasurementCategorical:
+				measurement = &models.Categorical{
 					Ts:    ts,
 					Value: valueString,
 				}

@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+
+	"github.com/codeuniversity/ppp-mhist/models"
 )
 
 var metaFilePath = "meta.json"
@@ -14,9 +16,9 @@ var metaFilePath = "meta.json"
 //DiskMeta holds the meta info for (Un)Marshalization
 type DiskMeta struct {
 	//sync maps would be better here, but are not easy to marshalize
-	NameToID map[string]int64          `json:"name_to_id"`
-	IDToName map[int64]string          `json:"id_to_name"`
-	IDToType map[int64]MeasurementType `json:"id_to_type"`
+	NameToID map[string]int64                 `json:"name_to_id"`
+	IDToName map[int64]string                 `json:"id_to_name"`
+	IDToType map[int64]models.MeasurementType `json:"id_to_type"`
 
 	HighestID int64 `json:"highest_id"`
 
@@ -25,8 +27,8 @@ type DiskMeta struct {
 
 //MeasurementTypeInfo ...
 type MeasurementTypeInfo struct {
-	Name string          `json:"name"`
-	Type MeasurementType `json:"type"`
+	Name string                 `json:"name"`
+	Type models.MeasurementType `json:"type"`
 }
 
 //InitMetaFromDisk ...
@@ -52,12 +54,12 @@ func NewDiskMeta() *DiskMeta {
 	return &DiskMeta{
 		NameToID: map[string]int64{},
 		IDToName: map[int64]string{},
-		IDToType: map[int64]MeasurementType{},
+		IDToType: map[int64]models.MeasurementType{},
 	}
 }
 
 //GetOrCreateID for name, checks if MeasurementType is correct
-func (m *DiskMeta) GetOrCreateID(name string, t MeasurementType) (int64, error) {
+func (m *DiskMeta) GetOrCreateID(name string, t models.MeasurementType) (int64, error) {
 	m.RLock()
 	id := m.NameToID[name]
 	m.RUnlock()
@@ -94,7 +96,7 @@ func (m *DiskMeta) GetNameForID(id int64) string {
 }
 
 //GetTypeForID to translate back form csv to record
-func (m *DiskMeta) GetTypeForID(id int64) MeasurementType {
+func (m *DiskMeta) GetTypeForID(id int64) models.MeasurementType {
 	m.RLock()
 	defer m.RUnlock()
 	return m.IDToType[id]

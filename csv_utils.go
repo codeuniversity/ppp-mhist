@@ -6,6 +6,8 @@ import (
 	"io"
 	"strconv"
 	"strings"
+
+	"github.com/codeuniversity/ppp-mhist/models"
 )
 
 const fieldSeperatorRune = ','
@@ -17,7 +19,7 @@ const newLineSize = len("\n")
 
 //constructCsvLine constructs a byteSlice, that if converted to a string is a csv line with `<id>,<timestamp>,<value>\n`
 //it avoids unnecessary string allocations by making a slice of len = 0 and a capacity (=length of underlying array) equal to what it needs for the whole line
-func constructCsvLine(id int64, m Measurement) ([]byte, error) {
+func constructCsvLine(id int64, m models.Measurement) ([]byte, error) {
 	value := m.ValueString()
 	tsString := strconv.FormatInt(m.Timestamp(), 10)
 	idString := strconv.FormatInt(id, 10)

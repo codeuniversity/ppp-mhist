@@ -6,14 +6,17 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/codeuniversity/ppp-mhist/models"
+	"github.com/codeuniversity/ppp-mhist/tcp"
 )
 
 //Server is the handler for requests
 type Server struct {
 	store       *Store
-	pools       *Pools
+	pools       *models.Pools
 	httpHandler *HTTPHandler
-	tcpHandler  *TCPHandler
+	tcpHandler  *tcp.Handler
 	waitGroup   *sync.WaitGroup
 }
 
@@ -28,7 +31,7 @@ type ServerConfig struct {
 
 //NewServer returns a new Server
 func NewServer(config ServerConfig) *Server {
-	pools := NewPools()
+	pools := models.NewPools()
 	diskStore, err := NewDiskStore(pools, config.MemorySize, config.DiskSize)
 	if err != nil {
 		panic(err)
@@ -41,7 +44,7 @@ func NewServer(config ServerConfig) *Server {
 		pools:     pools,
 		waitGroup: &sync.WaitGroup{},
 	}
-	tcpHandler := NewTCPHandler(server, config.TCPPort, pools)
+	tcpHandler := tcp.NewHandler(config.TCPPort, server, pools)
 	server.tcpHandler = tcpHandler
 	store.AddSubscriber(tcpHandler)
 
@@ -51,7 +54,7 @@ func NewServer(config ServerConfig) *Server {
 	}
 	server.httpHandler = httpHandler
 	for _, address := range config.ReplicationAddresses {
-		replication := NewReplication(address, pools)
+		replication := tcp.NewReplication(address, pools)
 		store.AddReplication(replication)
 	}
 	return server
@@ -75,7 +78,8 @@ func (s *Server) Run() {
 func (s *Server) Shutdown() {
 }
 
-func (s *Server) handleNewMessage(byteSlice []byte, isReplication bool, onError func(err error, status int)) {
+//HandleNewMessage coming from any source
+func (s *Server) HandleNewMessage(byteSlice []byte, isReplication bool, onError func(err error, status int)) {
 	data := s.pools.GetMessage()
 	defer s.pools.PutMessage(data)
 
@@ -98,7 +102,7 @@ func (s *Server) handleNewMessage(byteSlice []byte, isReplication bool, onError 
 	s.store.Add(data.Name, measurement, isReplication)
 }
 
-func (s *Server) constructMeasurementFromMessage(message *Message) (measurement Measurement, err error) {
+func (s *Server) constructMeasurementFromMessage(message *models.Message) (measurement models.Measurement, err error) {
 	switch message.Value.(type) {
 	case float64:
 		m := s.pools.GetNumericalMeasurement()
