@@ -28,23 +28,22 @@ type ServerConfig struct {
 
 //NewServer returns a new Server
 func NewServer(config ServerConfig) *Server {
-	memStore := NewStore(config.MemorySize)
-	pools := NewPools(memStore)
+	pools := NewPools()
 	diskStore, err := NewDiskStore(pools, config.MemorySize, config.DiskSize)
 	if err != nil {
 		panic(err)
 	}
-	memStore.AddSubscriber(diskStore)
-	memStore.SetDiskStore(diskStore)
+
+	store := NewStore(diskStore)
 
 	server := &Server{
-		store:     memStore,
+		store:     store,
 		pools:     pools,
 		waitGroup: &sync.WaitGroup{},
 	}
 	tcpHandler := NewTCPHandler(server, config.TCPPort, pools)
 	server.tcpHandler = tcpHandler
-	memStore.AddSubscriber(tcpHandler)
+	store.AddSubscriber(tcpHandler)
 
 	httpHandler := &HTTPHandler{
 		Server: server,
@@ -53,7 +52,7 @@ func NewServer(config ServerConfig) *Server {
 	server.httpHandler = httpHandler
 	for _, address := range config.ReplicationAddresses {
 		replication := NewReplication(address, pools)
-		memStore.AddReplication(replication)
+		store.AddReplication(replication)
 	}
 	return server
 }
@@ -74,7 +73,6 @@ func (s *Server) Run() {
 
 //Shutdown all goroutines
 func (s *Server) Shutdown() {
-	s.store.Shutdown()
 }
 
 func (s *Server) handleNewMessage(byteSlice []byte, isReplication bool, onError func(err error, status int)) {
