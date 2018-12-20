@@ -16,7 +16,7 @@ type Server struct {
 	store       *Store
 	pools       *models.Pools
 	httpHandler *HTTPHandler
-	tcpHandler  *TCPHandler
+	tcpHandler  *tcp.Handler
 	waitGroup   *sync.WaitGroup
 }
 
@@ -44,7 +44,7 @@ func NewServer(config ServerConfig) *Server {
 		pools:     pools,
 		waitGroup: &sync.WaitGroup{},
 	}
-	tcpHandler := NewTCPHandler(server, config.TCPPort, pools)
+	tcpHandler := tcp.NewHandler(config.TCPPort, server, pools)
 	server.tcpHandler = tcpHandler
 	store.AddSubscriber(tcpHandler)
 
@@ -78,7 +78,8 @@ func (s *Server) Run() {
 func (s *Server) Shutdown() {
 }
 
-func (s *Server) handleNewMessage(byteSlice []byte, isReplication bool, onError func(err error, status int)) {
+//HandleNewMessage coming from any source
+func (s *Server) HandleNewMessage(byteSlice []byte, isReplication bool, onError func(err error, status int)) {
 	data := s.pools.GetMessage()
 	defer s.pools.PutMessage(data)
 

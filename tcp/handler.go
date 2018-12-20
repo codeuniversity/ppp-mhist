@@ -1,4 +1,4 @@
-package mhist
+package tcp
 
 import (
 	"bufio"
@@ -8,33 +8,37 @@ import (
 	"sync"
 
 	"github.com/codeuniversity/ppp-mhist/models"
-	"github.com/codeuniversity/ppp-mhist/tcp"
 )
 
-//TCPHandler handles tcp connections
-type TCPHandler struct {
+//MessageHandler handles everything for incoming messages
+type MessageHandler interface {
+	HandleNewMessage(byteSlice []byte, isReplication bool, onError func(err error, _ int))
+}
+
+//Handler handles tcp connections
+type Handler struct {
+	messageHandler              MessageHandler
 	address                     string
-	outboundCollection          *tcp.ConnectionCollection
-	server                      *Server
-	filterPerOutboundConnection map[*tcp.Connection]*models.FilterCollection
+	outboundCollection          *ConnectionCollection
+	filterPerOutboundConnection map[*Connection]*models.FilterCollection
 	filterMutex                 *sync.RWMutex
 	pools                       *models.Pools
 }
 
-//NewTCPHandler sets the wrapped handlers callbacks correctly, Run() still has to be called
-func NewTCPHandler(server *Server, port int, pools *models.Pools) *TCPHandler {
-	return &TCPHandler{
+//NewHandler sets the wrapped handlers callbacks correctly, Run() still has to be called
+func NewHandler(port int, messageHandler MessageHandler, pools *models.Pools) *Handler {
+	return &Handler{
+		messageHandler:              messageHandler,
 		address:                     fmt.Sprintf("0.0.0.0:%v", port),
-		server:                      server,
-		outboundCollection:          &tcp.ConnectionCollection{},
+		outboundCollection:          &ConnectionCollection{},
 		filterMutex:                 &sync.RWMutex{},
-		filterPerOutboundConnection: make(map[*tcp.Connection]*models.FilterCollection),
+		filterPerOutboundConnection: make(map[*Connection]*models.FilterCollection),
 		pools:                       pools,
 	}
 }
 
 //Notify handler about new message
-func (h *TCPHandler) Notify(name string, measurement models.Measurement) {
+func (h *Handler) Notify(name string, measurement models.Measurement) {
 	m := h.pools.GetMessage()
 	defer h.pools.PutMessage(m)
 
@@ -50,7 +54,7 @@ func (h *TCPHandler) Notify(name string, measurement models.Measurement) {
 	}
 	h.filterMutex.RLock()
 	defer h.filterMutex.RUnlock()
-	h.outboundCollection.ForEach(func(conn *tcp.Connection) {
+	h.outboundCollection.ForEach(func(conn *Connection) {
 		filter := h.filterPerOutboundConnection[conn]
 		if filter != nil {
 			if filter.Passes(name, measurement) {
@@ -63,7 +67,7 @@ func (h *TCPHandler) Notify(name string, measurement models.Measurement) {
 }
 
 //Run listens for new connections
-func (h *TCPHandler) Run() {
+func (h *Handler) Run() {
 	listener, err := net.Listen("tcp", h.address)
 	if err != nil {
 		panic("Error starting TCP server.")
@@ -80,15 +84,15 @@ func (h *TCPHandler) Run() {
 	}
 }
 
-func (h *TCPHandler) onNewMessage(byteSlice []byte, isReplication bool) {
-	h.server.handleNewMessage(byteSlice, isReplication, func(err error, _ int) {
+func (h *Handler) onNewMessage(byteSlice []byte, isReplication bool) {
+	h.messageHandler.HandleNewMessage(byteSlice, isReplication, func(err error, _ int) {
 		if err != nil {
 			fmt.Println(err)
 		}
 	})
 }
 
-func (h *TCPHandler) handleNewConnection(conn net.Conn) {
+func (h *Handler) handleNewConnection(conn net.Conn) {
 	reader := bufio.NewReader(conn)
 	byteSlice, err := reader.ReadSlice('\n')
 	if err != nil {
@@ -103,7 +107,7 @@ func (h *TCPHandler) handleNewConnection(conn net.Conn) {
 		conn.Close()
 		return
 	}
-	connectionWrapper := &tcp.Connection{
+	connectionWrapper := &Connection{
 		Socket: conn,
 		Reader: reader,
 	}
@@ -122,14 +126,14 @@ func (h *TCPHandler) handleNewConnection(conn net.Conn) {
 	connectionWrapper.Listen()
 }
 
-func (h *TCPHandler) removeFilterForConnection(conn *tcp.Connection) {
+func (h *Handler) removeFilterForConnection(conn *Connection) {
 	h.filterMutex.Lock()
 	defer h.filterMutex.Unlock()
 
 	delete(h.filterPerOutboundConnection, conn)
 }
 
-func (h *TCPHandler) addFilterForConnection(filterDefinition models.FilterDefinition, conn *tcp.Connection) {
+func (h *Handler) addFilterForConnection(filterDefinition models.FilterDefinition, conn *Connection) {
 	h.filterMutex.Lock()
 	defer h.filterMutex.Unlock()
 
