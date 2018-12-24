@@ -120,11 +120,7 @@ func writeGob(filePath string, object interface{}) error {
 	file, err := os.Create(filePath)
 	if err == nil {
 		encoder := gob.NewEncoder(file)
-		encodeErr := encoder.Encode(object)
-		if encodeErr != nil {
-			fmt.Println(err)
-			return encodeErr
-		}
+		err = encoder.Encode(object)
 	}
 	file.Close()
 	return err
