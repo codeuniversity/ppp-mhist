@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/codeuniversity/ppp-mhist/models"
-	"github.com/codeuniversity/ppp-mhist/tcp"
+	"github.com/alexmorten/mhist/models"
+	"github.com/alexmorten/mhist/tcp"
 )
 
 //Server is the handler for requests

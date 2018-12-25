@@ -1,6 +1,6 @@
 package mhist
 
-import "github.com/codeuniversity/ppp-mhist/models"
+import "github.com/alexmorten/mhist/models"
 
 //Subscriber is something that can be notified with measurements
 type Subscriber interface {

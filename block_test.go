@@ -3,7 +3,7 @@ package mhist
 import (
 	"testing"
 
-	"github.com/codeuniversity/ppp-mhist/models"
+	"github.com/alexmorten/mhist/models"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

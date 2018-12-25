@@ -7,7 +7,7 @@ import (
 	"net"
 	"sync"
 
-	"github.com/codeuniversity/ppp-mhist/models"
+	"github.com/alexmorten/mhist/models"
 )
 
 //MessageHandler handles everything for incoming messages

@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/codeuniversity/ppp-mhist/models"
+	"github.com/alexmorten/mhist/models"
 )
 
 var metaFilePath = "meta.gob"

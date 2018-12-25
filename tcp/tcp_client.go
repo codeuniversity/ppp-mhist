@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/codeuniversity/ppp-mhist/models"
+	"github.com/alexmorten/mhist/models"
 )
 
 //Client for tcp connections. Automatically retries establishing connections

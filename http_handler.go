@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/codeuniversity/ppp-mhist/models"
+	"github.com/alexmorten/mhist/models"
 )
 
 //HTTPHandler handles http connections

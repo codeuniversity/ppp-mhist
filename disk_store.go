@@ -8,7 +8,7 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/codeuniversity/ppp-mhist/models"
+	"github.com/alexmorten/mhist/models"
 )
 
 const maxBuffer = 12 * 1024

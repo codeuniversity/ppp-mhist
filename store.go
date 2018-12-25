@@ -3,7 +3,7 @@ package mhist
 import (
 	"fmt"
 
-	"github.com/codeuniversity/ppp-mhist/models"
+	"github.com/alexmorten/mhist/models"
 )
 
 //Store is responsible for handling Storage of different kinds of measurements
